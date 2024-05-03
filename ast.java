@@ -488,7 +488,12 @@ class VarDeclNode extends DeclNode {
     }
 
     public void codeGen() {
-        // TODO: complete this
+		// global variable, needs to be stored in static data area
+		if (myId.mySym().isGlobal()) {
+			codeGen.generate("\t.data");
+			codeGen.generate("\t.align", "2");
+			codeGen.generateLabeled("_" + myId.name(), ".space", "4");
+		}
     }
 
     // 3 children
@@ -1120,7 +1125,8 @@ class ReadStmtNode extends StmtNode {
     }
 
     public void codeGen() {
-        // TODO: complete this
+		codeGen.generate("li", codeGen.V0, 5);
+		codeGen.generate("syscall");
     }
 
     // 1 child (actually can only be an IdNode or a TupleAccessNode)
@@ -1148,8 +1154,20 @@ class WriteStmtNode extends StmtNode {
     }
 
     public void codeGen() {
-        // TODO: complete this
-    }
+		myExp.codeGen();
+
+		// write int
+		if (myType.isIntType()) {
+			codeGen.genPop(codeGen.A0, "4");
+			codeGen.generate("li", codeGen.V0, "1");
+		}
+		else if (myType.isStringType()) { // write string
+			codeGen.genPop(codeGen.A0, "4");
+            codeGen.generate("li", codeGen.V0, "4");
+		}
+
+		codeGen.generate("syscall");
+	}
 
     // 2 children
     private ExpNode myExp;
@@ -1239,8 +1257,8 @@ class TrueNode extends ExpNode {
     }
 
     public void codeGen() {
-        // TODO: complete this
-    }
+		//TODO
+	}
 
     private int myLineNum;
     private int myCharNum;
@@ -1386,7 +1404,9 @@ class IntLitNode extends ExpNode {
     }
 
     public void codeGen() {
-        // TODO: complete this
+		codeGen.generate("li", codeGen.T0, myIntVal);
+		codeGen.generate("sw", codeGen.T0, "($sp)");
+		codeGen.generate(codeGen.SP, codeGen.SP, "4");
     }
 
     private int myLineNum;
@@ -1395,6 +1415,9 @@ class IntLitNode extends ExpNode {
 }
 
 class StrLitNode extends ExpNode {
+	static HashTable<String, StrLitNode> stringStored 
+		= new HashTable<String, String>();
+
     public StrLitNode(int lineNum, int charNum, String strVal) {
         myLineNum = lineNum;
         myCharNum = charNum;
@@ -1406,9 +1429,35 @@ class StrLitNode extends ExpNode {
     }
 
     public void codeGen() {
-        // TODO: complete this
+		// hashtable to check if string literal is already stored in
+		// static data area
+		
+		// hash table does not contain string lit; this string is not
+		// stored in static data area yet
+		if (!stringStore.containsKey(myStrVal)) {
+			codeGen.generate("\t.data");
+			label = codeGen.nextLabel(); // generate a new label
+			codeGen.generateLabeled(label, ".asciiz", "\""+ myStrVal + "\"");
+
+			codeGen.generate("\t.text");
+			codeGen.generate("la", codeGen.T0, label);
+			codeGen.generate("lw", codeGen.T0, "($sp)");
+			codeGen.generate("subu", codeGen.SP, codeGen.SP);
+			
+			// add it to the hashtable
+			stringStored.add(myStrVal, label);
+		
+		} else { // string has been stored in static data area
+			label = stringStored.get(myStrVal);	
+		
+		    codeGen.generate("\t.text");
+            codeGen.generate("la", codeGen.T0, label);
+            codeGen.generate("lw", codeGen.T0, "($sp)");
+            codeGen.generate("subu", codeGen.SP, codeGen.SP);	
+		}
     }
 
+	public String label; // this is the label of this string literal
     private int myLineNum;
     private int myCharNum;
     private String myStrVal;
