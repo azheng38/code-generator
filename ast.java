@@ -159,7 +159,7 @@ class ProgramNode extends ASTnode {
      * codeGen
      ***/
     public void codeGen() {
-        // TODO: complete this
+		myDeclList.codeGen();
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -214,7 +214,9 @@ class DeclListNode extends ASTnode {
     }
 
     public void codeGen() {
-        // TODO: complete this
+		for (DeclNode node : myDecls) {
+			node.codeGen();
+		}
     }
 
     // list of children (DeclNodes)
@@ -244,7 +246,9 @@ class StmtListNode extends ASTnode {
     }
 
     public void codeGen() {
-        // TODO: complete this
+		for (StmtNode node : myStmts) {
+			node.codeGen();
+		}
     }
 
     // list of children (StmtNodes)
