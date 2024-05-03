@@ -282,7 +282,9 @@ class ExpListNode extends ASTnode {
     }
 
     public void codeGen() {
-        // TODO: complete this
+        for (ExpNode exp : myExps) {
+	    exp.codeGen();
+	}
     }
 
     // list of children (ExpNodes)
@@ -1194,7 +1196,7 @@ class CallStmtNode extends StmtNode {
     }
 
     public void codeGen() {
-        // TODO: complete this
+        myCall.codeGen(); // since we did check for non-void ret in CallExpNode, no need to pop here
     }
 
     // 1 child
@@ -1385,8 +1387,28 @@ class IdNode extends ExpNode {
         }
     }
 
+    // not sure if this is correct
+    public void genAddr() {
+	if (mySym.isGlobal()) { // global
+	    Codegen.generate("la", Codegen.T0, "_" + myStrVal);
+	} else { // local
+	    Codegen.generateIndexed("la", Codegen.T0, Codegen.FP, mySym.getOffset()); 
+	}
+    }
+
+    // not sure if this is correct
     public void codeGen() {
-        // TODO: complete this
+	if (mySym.isGlobal()) { // global variable
+	    Codegen.generate("lw", Codegen.T0, "_" + myStrVal);
+	} else { // local variable
+	    Codegen.generateIndexed("lw", Codegen.T0, Codegen.FP, mySym.getOffset());
+	}
+
+	Codegen.genPush(Codegen.T0);
+    }
+
+    public void genJumpAndLink() {
+	Codegen.generate("jal", "_" + myStrVal); // jal _fctnName
     }
 
     private int myLineNum;
@@ -1674,7 +1696,10 @@ class CallExpNode extends ExpNode {
     }
 
     public void codeGen() {
-        // TODO
+        if (myExpList != null) myExpList.codeGen(); // step 1
+    	myId.genJumpAndLink(); // step 2
+	if(!(myId.sym().getType().isVoidType())) // step 3
+	    Codegen.genPush(Codegen.V0); 
     }
 
     // 2 children
