@@ -358,7 +358,7 @@ class FctnBodyNode extends ASTnode {
     }
 
     public void codeGen() {
-        // TODO: complete this
+        //TODO
     }
 
     // 2 children
@@ -492,9 +492,9 @@ class VarDeclNode extends DeclNode {
     public void codeGen() {
 		// global variable, needs to be stored in static data area
 		if (myId.mySym().isGlobal()) {
-			codeGen.generate("\t.data");
-			codeGen.generate("\t.align", "2");
-			codeGen.generateLabeled("_" + myId.name(), ".space", "4");
+			Codegen.generate("\t.data");
+			Codegen.generate("\t.align", "2");
+			Codegen.genLabel("_" + myId.name(), ".space 4");
 		}
     }
 
@@ -610,7 +610,22 @@ class FctnDeclNode extends DeclNode {
     }
 
     public void codeGen() {
-        // TODO: complete this
+		// Preamble
+		// this is a main method
+        if (myId.isMain()) {
+			Codegen.generate("\t.text");
+			Codegen.generate("\t.globl main");
+			Codegen.genLabel("main");
+		} else { // not a main method
+			Codegen.generate("\t.text");
+			Codegen.genLabel("\t_" + myId.name());
+		}
+
+		// Entry
+		Codegen.genPush(Codegen.RA); // push return addr
+		Codegen.genPush(Codegen.FP); // push control link
+
+		// set the FP
     }
 
     // 4 children
@@ -1127,8 +1142,8 @@ class ReadStmtNode extends StmtNode {
     }
 
     public void codeGen() {
-		codeGen.generate("li", codeGen.V0, 5);
-		codeGen.generate("syscall");
+		CodeGen.generate("li", codeGen.V0, 5);
+		CodeGen.generate("syscall");
     }
 
     // 1 child (actually can only be an IdNode or a TupleAccessNode)
@@ -1160,15 +1175,15 @@ class WriteStmtNode extends StmtNode {
 
 		// write int
 		if (myType.isIntType()) {
-			codeGen.genPop(codeGen.A0, "4");
-			codeGen.generate("li", codeGen.V0, "1");
+			CodeGen.genPop(CodeGen.A0, "4");
+			CodeGen.generate("li", CodeGen.V0, "1");
 		}
 		else if (myType.isStringType()) { // write string
-			codeGen.genPop(codeGen.A0, "4");
-            codeGen.generate("li", codeGen.V0, "4");
+			CodeGen.genPop(CodeGen.A0, "4");
+            CodeGen.generate("li", CodeGen.V0, "4");
 		}
 
-		codeGen.generate("syscall");
+		CodeGen.generate("syscall");
 	}
 
     // 2 children
@@ -1429,9 +1444,8 @@ class IntLitNode extends ExpNode {
     }
 
     public void codeGen() {
-		codeGen.generate("li", codeGen.T0, myIntVal);
-		codeGen.generate("sw", codeGen.T0, "($sp)");
-		codeGen.generate(codeGen.SP, codeGen.SP, "4");
+		Codegen.generate("li", Codegen.T0, myIntVal);
+		Codegen.push(Codegen.t0);
     }
 
     private int myLineNum;
@@ -1461,24 +1475,22 @@ class StrLitNode extends ExpNode {
 		// stored in static data area yet
 		if (!stringStore.containsKey(myStrVal)) {
 			codeGen.generate("\t.data");
-			label = codeGen.nextLabel(); // generate a new label
-			codeGen.generateLabeled(label, ".asciiz", "\""+ myStrVal + "\"");
+			label = Codegen.nextLabel(); // generate a new label
+			Codegen.genLabel(label, ".asciiz \""+ myStrVal + "\"");
 
-			codeGen.generate("\t.text");
-			codeGen.generate("la", codeGen.T0, label);
-			codeGen.generate("lw", codeGen.T0, "($sp)");
-			codeGen.generate("subu", codeGen.SP, codeGen.SP);
-			
+			Codegen.generate("\t.text");
+			Codegen.generate("la", Codegen.T0, label);
+			Codegen.push(Codegen.T0);
+	
 			// add it to the hashtable
 			stringStored.add(myStrVal, label);
 		
 		} else { // string has been stored in static data area
 			label = stringStored.get(myStrVal);	
 		
-		    codeGen.generate("\t.text");
-            codeGen.generate("la", codeGen.T0, label);
-            codeGen.generate("lw", codeGen.T0, "($sp)");
-            codeGen.generate("subu", codeGen.SP, codeGen.SP);	
+		    Codegen.generate("\t.text");
+            Codegen.generate("la", Codegen.T0, label);
+			Codegen.push(Codegen.T0);
 		}
     }
 
