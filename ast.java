@@ -1120,7 +1120,8 @@ class ReadStmtNode extends StmtNode {
     }
 
     public void codeGen() {
-        // TODO: complete this
+		codeGen.generate("li", codeGen.V0, 5);
+		codeGen.generate("syscall");
     }
 
     // 1 child (actually can only be an IdNode or a TupleAccessNode)
