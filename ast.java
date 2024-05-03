@@ -1244,6 +1244,7 @@ abstract class ExpNode extends ASTnode {
      * Default version for nodes with no names
      ***/
     public void nameAnalysis(SymTable symTab) { }
+    abstract public void codeGen();
 }
 
 class TrueNode extends ExpNode {
@@ -1257,8 +1258,9 @@ class TrueNode extends ExpNode {
     }
 
     public void codeGen() {
-		//TODO
-	}
+	Codegen.generate("li", Codegen.T0, Codegen.TRUE); // T0 = 1
+        Codegen.genPush(Codegen.T0); // push(T0)
+    }
 
     private int myLineNum;
     private int myCharNum;
@@ -1275,7 +1277,8 @@ class FalseNode extends ExpNode {
     }
 
     public void codeGen() {
-        // TODO: complete this
+        Codegen.generate("li", Codegen.T0, Codegen.FALSE); // T0 = 0
+        Codegen.genPush(Codegen.T0); // push(T0)
     }
 
     private int myLineNum;
