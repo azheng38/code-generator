@@ -488,7 +488,12 @@ class VarDeclNode extends DeclNode {
     }
 
     public void codeGen() {
-        // TODO: complete this
+		// global variable, needs to be stored in static data area
+		if (myId.mySym().isGlobal()) {
+			codeGen.generate("\t.data");
+			codeGen.generate("\t.align", "2");
+			codeGen.generateLabeled("_" + myId.name(), ".space", "4");
+		}
     }
 
     // 3 children
@@ -1153,12 +1158,12 @@ class WriteStmtNode extends StmtNode {
 
 		// write int
 		if (myType.isIntType()) {
-			codeGen.genPop(codeGen.A0, 4);
-			codeGen.generate("li", codeGen.V0, 1);
+			codeGen.genPop(codeGen.A0, "4");
+			codeGen.generate("li", codeGen.V0, "1");
 		}
 		else if (myType.isStringType()) { // write string
-			codeGen.genPop(codeGen.A0, 4);
-            codeGen.generate("li", codeGen.V0, 4);
+			codeGen.genPop(codeGen.A0, "4");
+            codeGen.generate("li", codeGen.V0, "4");
 		}
 
 		codeGen.generate("syscall");
@@ -1252,8 +1257,8 @@ class TrueNode extends ExpNode {
     }
 
     public void codeGen() {
-        // TODO: complete this
-    }
+		//TODO
+	}
 
     private int myLineNum;
     private int myCharNum;
@@ -1401,7 +1406,7 @@ class IntLitNode extends ExpNode {
     public void codeGen() {
 		codeGen.generate("li", codeGen.T0, myIntVal);
 		codeGen.generate("sw", codeGen.T0, "($sp)");
-		codeGen.generate(codeGen.SP, codeGen.SP, 4);
+		codeGen.generate(codeGen.SP, codeGen.SP, "4");
     }
 
     private int myLineNum;
@@ -1430,11 +1435,11 @@ class StrLitNode extends ExpNode {
 		// hash table does not contain string lit; this string is not
 		// stored in static data area yet
 		if (!stringStore.containsKey(myStrVal)) {
-			codeGen.p.print("    .data\n");
+			codeGen.generate("\t.data");
 			label = codeGen.nextLabel(); // generate a new label
 			codeGen.generateLabeled(label, ".asciiz", "\""+ myStrVal + "\"");
 
-			codeGen.p.print("    .text\n");
+			codeGen.generate("\t.text");
 			codeGen.generate("la", codeGen.T0, label);
 			codeGen.generate("lw", codeGen.T0, "($sp)");
 			codeGen.generate("subu", codeGen.SP, codeGen.SP);
@@ -1445,7 +1450,7 @@ class StrLitNode extends ExpNode {
 		} else { // string has been stored in static data area
 			label = stringStored.get(myStrVal);	
 		
-		    codeGen.p.print("    .text\n");
+		    codeGen.generate("\t.text");
             codeGen.generate("la", codeGen.T0, label);
             codeGen.generate("lw", codeGen.T0, "($sp)");
             codeGen.generate("subu", codeGen.SP, codeGen.SP);	
