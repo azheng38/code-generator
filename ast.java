@@ -213,6 +213,10 @@ class DeclListNode extends ASTnode {
         }
     }
 
+    public void codeGen() {
+        // TODO: complete this
+    }
+
     // list of children (DeclNodes)
     private List<DeclNode> myDecls;
 }
@@ -237,6 +241,10 @@ class StmtListNode extends ASTnode {
         while (it.hasNext()) {
             it.next().unparse(p, indent);
         } 
+    }
+
+    public void codeGen() {
+        // TODO: complete this
     }
 
     // list of children (StmtNodes)
@@ -267,6 +275,10 @@ class ExpListNode extends ASTnode {
                 it.next().unparse(p, indent);
             }
         } 
+    }
+
+    public void codeGen() {
+        // TODO: complete this
     }
 
     // list of children (ExpNodes)
@@ -337,6 +349,10 @@ class FctnBodyNode extends ASTnode {
     public void unparse(PrintWriter p, int indent) {
         myDeclList.unparse(p, indent);
         myStmtList.unparse(p, indent);
+    }
+
+    public void codeGen() {
+        // TODO: complete this
     }
 
     // 2 children
@@ -467,6 +483,10 @@ class VarDeclNode extends DeclNode {
         p.println(".");
     }
 
+    public void codeGen() {
+        // TODO: complete this
+    }
+
     // 3 children
     private TypeNode myType;
     private IdNode myId;
@@ -576,6 +596,10 @@ class FctnDeclNode extends DeclNode {
         p.println("} [");
         myBody.unparse(p, indent+4);
         p.println("]\n");
+    }
+
+    public void codeGen() {
+        // TODO: complete this
     }
 
     // 4 children
@@ -834,6 +858,10 @@ class AssignStmtNode extends StmtNode {
         p.println(".");
     }
 
+    public void codeGen() {
+        // TODO: complete this
+    }
+
     // 1 child
     private AssignExpNode myAssign;
 }
@@ -857,6 +885,10 @@ class PostIncStmtNode extends StmtNode {
         p.println("++.");
     }
 
+    public void codeGen() {
+        // TODO: complete this
+    }
+
     // 1 child
     private ExpNode myExp;
 }
@@ -878,6 +910,10 @@ class PostDecStmtNode extends StmtNode {
         doIndent(p, indent);
         myExp.unparse(p, 0);
         p.println("--.");
+    }
+
+    public void codeGen() {
+        // TODO: complete this
     }
 
     // 1 child
@@ -922,6 +958,10 @@ class IfStmtNode extends StmtNode {
         myStmtList.unparse(p, indent+4);
         doIndent(p, indent);
         p.println("]");  
+    }
+
+    public void codeGen() {
+        // TODO: complete this
     }
 
     // 3 children
@@ -993,6 +1033,10 @@ class IfElseStmtNode extends StmtNode {
         p.println("]"); 
     }
 
+    public void codeGen() {
+        // TODO: complete this
+    }
+
     // 5 children
     private ExpNode myExp;
     private DeclListNode myThenDeclList;
@@ -1041,6 +1085,10 @@ class WhileStmtNode extends StmtNode {
         p.println("]");
     }
 
+    public void codeGen() {
+        // TODO: complete this
+    }
+
     // 3 children
     private ExpNode myExp;
     private DeclListNode myDeclList;
@@ -1067,6 +1115,10 @@ class ReadStmtNode extends StmtNode {
         p.println(".");
     }
 
+    public void codeGen() {
+        // TODO: complete this
+    }
+
     // 1 child (actually can only be an IdNode or a TupleAccessNode)
     private ExpNode myExp;
 }
@@ -1091,6 +1143,10 @@ class WriteStmtNode extends StmtNode {
         p.println(".");
     }
 
+    public void codeGen() {
+        // TODO: complete this
+    }
+
     // 2 children
     private ExpNode myExp;
     private Type myType;
@@ -1113,6 +1169,10 @@ class CallStmtNode extends StmtNode {
         doIndent(p, indent);
         myCall.unparse(p, indent);
         p.println(".");
+    }
+
+    public void codeGen() {
+        // TODO: complete this
     }
 
     // 1 child
@@ -1145,6 +1205,10 @@ class ReturnStmtNode extends StmtNode {
         p.println(".");
     }
 
+    public void codeGen() {
+        // TODO: complete this
+    }
+
     // 1 child
     private ExpNode myExp; // possibly null
 }
@@ -1170,6 +1234,10 @@ class TrueNode extends ExpNode {
         p.print("True");
     }
 
+    public void codeGen() {
+        // TODO: complete this
+    }
+
     private int myLineNum;
     private int myCharNum;
 }
@@ -1182,6 +1250,10 @@ class FalseNode extends ExpNode {
 
     public void unparse(PrintWriter p, int indent) {
         p.print("False");
+    }
+
+    public void codeGen() {
+        // TODO: complete this
     }
 
     private int myLineNum;
@@ -1288,6 +1360,10 @@ class IdNode extends ExpNode {
         }
     }
 
+    public void codeGen() {
+        // TODO: complete this
+    }
+
     private int myLineNum;
     private int myCharNum;
     private String myStrVal;
@@ -1305,6 +1381,10 @@ class IntLitNode extends ExpNode {
         p.print(myIntVal);
     }
 
+    public void codeGen() {
+        // TODO: complete this
+    }
+
     private int myLineNum;
     private int myCharNum;
     private int myIntVal;
@@ -1319,6 +1399,10 @@ class StrLitNode extends ExpNode {
 
     public void unparse(PrintWriter p, int indent) {
         p.print(myStrVal);
+    }
+
+    public void codeGen() {
+        // TODO: complete this
     }
 
     private int myLineNum;
@@ -1493,6 +1577,10 @@ class AssignExpNode extends ExpNode {
         if (indent != -1)  p.print(")");    
     }
 
+	public void codeGen() {
+		// TODO
+	}
+
     // 2 children
     private ExpNode myLhs;
     private ExpNode myExp;
@@ -1527,6 +1615,10 @@ class CallExpNode extends ExpNode {
             myExpList.unparse(p, 0);
         }
         p.print(")");   
+    }
+
+    public void codeGen() {
+        // TODO
     }
 
     // 2 children
@@ -1586,6 +1678,10 @@ class NotNode extends UnaryExpNode {
         myExp.unparse(p, 0);
         p.print(")");
     }
+
+    public void codeGen() {
+        // TODO
+    }
 }
 
 class UnaryMinusNode extends UnaryExpNode {
@@ -1597,6 +1693,10 @@ class UnaryMinusNode extends UnaryExpNode {
         p.print("(-");
         myExp.unparse(p, 0);
         p.print(")");
+    }
+
+    public void codeGen() {
+        // TODO
     }
 }
 
@@ -1616,6 +1716,10 @@ class PlusNode extends BinaryExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    public void codeGen() {
+        // TODO
+    }
 }
 
 class MinusNode extends BinaryExpNode {
@@ -1629,6 +1733,10 @@ class MinusNode extends BinaryExpNode {
         p.print(" - ");
         myExp2.unparse(p, 0);
         p.print(")");
+    }
+
+    public void codeGen() {
+        // TODO
     }
 }
 
@@ -1644,6 +1752,10 @@ class TimesNode extends BinaryExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    public void codeGen() {
+        // TODO
+    }
 }
 
 class DivideNode extends BinaryExpNode {
@@ -1657,6 +1769,10 @@ class DivideNode extends BinaryExpNode {
         p.print(" / ");
         myExp2.unparse(p, 0);
         p.print(")");
+    }
+
+    public void codeGen() {
+        // TODO
     }
 }
 
@@ -1672,6 +1788,10 @@ class EqualsNode extends BinaryExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    public void codeGen() {
+        // TODO
+    }
 }
 
 class NotEqualsNode extends BinaryExpNode {
@@ -1685,6 +1805,10 @@ class NotEqualsNode extends BinaryExpNode {
         p.print(" ~= ");
         myExp2.unparse(p, 0);
         p.print(")");
+    }
+
+    public void codeGen() {
+        // TODO
     }
 }
 
@@ -1700,6 +1824,10 @@ class GreaterNode extends BinaryExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    public void codeGen() {
+        // TODO
+    }
 }
 
 class GreaterEqNode extends BinaryExpNode {
@@ -1713,6 +1841,10 @@ class GreaterEqNode extends BinaryExpNode {
         p.print(" >= ");
         myExp2.unparse(p, 0);
         p.print(")");
+    }
+
+    public void codeGen() {
+        // TODO
     }
 }
 
@@ -1728,6 +1860,10 @@ class LessNode extends BinaryExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    public void codeGen() {
+        // TODO
+    }
 }
 
 class LessEqNode extends BinaryExpNode {
@@ -1741,6 +1877,10 @@ class LessEqNode extends BinaryExpNode {
         p.print(" <= ");
         myExp2.unparse(p, 0);
         p.print(")");
+    }
+
+    public void codeGen() {
+        // TODO
     }
 }
 
@@ -1756,6 +1896,10 @@ class AndNode extends BinaryExpNode {
         myExp2.unparse(p, 0);
         p.print(")");
     }
+
+    public void codeGen() {
+        // TODO
+    }
 }
 
 class OrNode extends BinaryExpNode {
@@ -1769,5 +1913,9 @@ class OrNode extends BinaryExpNode {
         p.print(" | ");
         myExp2.unparse(p, 0);
         p.print(")");
+    }
+
+    public void codeGen() {
+        // TODO
     }
 }
