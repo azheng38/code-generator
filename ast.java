@@ -1684,7 +1684,17 @@ class NotNode extends UnaryExpNode {
     }
 
     public void codeGen() {
-        // TODO
+        String trueLabel = Codegen.nextLabel();
+	String falseLabel = Codegen.nextLabel();
+	myExp.codeGen(); 
+	Codegen.genPop(Codegen.T0);
+	Codegen.generate("beq", Codegen.T0, Codegen.TRUE, label); // b if T0 == 1
+	Codegen.generate("add", Codegen.T0, Codegen.T0, 1); // If T0 == 0 then T0 += 1
+	Codegen.generate("b", falseLabel); // to go end
+	Codegen.genLabel(trueLabel);
+	Codegen.generate("sub", Codegen.T0, Codegen.T0, 1); // if T0 == 1 then T0 -= 1
+	Codegen.genLabel(falseLabel);
+	Codegen.genPush(Codegen.T0);
     }
 }
 
@@ -1700,7 +1710,10 @@ class UnaryMinusNode extends UnaryExpNode {
     }
 
     public void codeGen() {
-        // TODO
+        myExp.codeGen();
+	Codegen.genPop(Codegen.T0);
+	Codegen.generate("neg", Codegen.T0, Codegen.T0); // T0 = -T0
+	Codegen.genPush(Codegen.T0);
     }
 }
 
@@ -1722,7 +1735,12 @@ class PlusNode extends BinaryExpNode {
     }
 
     public void codeGen() {
-        // TODO
+        myExp2.codeGen(); // push RHS
+	myExp1.codeGen(); // push LHS
+	Codegen.genPop(Codegen.T0); // pop LHS
+	Codegen.genPop(Codegen.T1); // pop RHS
+	Codegen.generate("add", Codegen.T0, Codegen.T0, Codegen.T1);
+	Codegen.genPush(Codegen.T0);
     }
 }
 
@@ -1740,7 +1758,12 @@ class MinusNode extends BinaryExpNode {
     }
 
     public void codeGen() {
-        // TODO
+        myExp2.codeGen(); // push RHS
+        myExp1.codeGen(); // push LHS
+        Codegen.genPop(Codegen.T0); // pop LHS
+        Codegen.genPop(Codegen.T1); // pop RHS
+        Codegen.generate("sub", Codegen.T0, Codegen.T0, Codegen.T1);
+        Codegen.genPush(Codegen.T0);
     }
 }
 
@@ -1758,7 +1781,13 @@ class TimesNode extends BinaryExpNode {
     }
 
     public void codeGen() {
-        // TODO
+        myExp2.codeGen(); // push RHS
+        myExp1.codeGen(); // push LHS
+        Codegen.genPop(Codegen.T0); // pop LHS
+        Codegen.genPop(Codegen.T1); // pop RHS
+        Codegen.generate("mult", Codegen.T0, Codegen.T1);
+	Codegen.generate("mflo", Codegen.T0);
+        Codegen.genPush(Codegen.T0);
     }
 }
 
@@ -1776,7 +1805,13 @@ class DivideNode extends BinaryExpNode {
     }
 
     public void codeGen() {
-        // TODO
+        myExp2.codeGen(); // push RHS
+        myExp1.codeGen(); // push LHS
+        Codegen.genPop(Codegen.T0); // pop LHS
+        Codegen.genPop(Codegen.T1); // pop RHS
+        Codegen.generate("div", Codegen.T0, Codegen.T1);
+        Codegen.generate("mflo", Codegen.T0);
+        Codegen.genPush(Codegen.T0);
     }
 }
 
@@ -1794,7 +1829,12 @@ class EqualsNode extends BinaryExpNode {
     }
 
     public void codeGen() {
-        // TODO
+        myExp2.codeGen(); // RHS
+        myExp1.codeGen(); // LHS
+    	Codegen.genPop(Codegen.T0); // LHS
+	Codegen.genPop(Codegen.T1); // RHS
+	Codegen.generate("seq", Codegen.T0, Codegen.T0, Codegen.T1); // T0 = 1 if T0 == T1
+	Codegen.genPush(Codegen.T0);
     }
 }
 
@@ -1812,7 +1852,12 @@ class NotEqualsNode extends BinaryExpNode {
     }
 
     public void codeGen() {
-        // TODO
+        myExp2.codeGen(); // RHS
+        myExp1.codeGen(); // LHS
+        Codegen.genPop(Codegen.T0); // LHS
+        Codegen.genPop(Codegen.T1); // RHS
+        Codegen.generate("sne", Codegen.T0, Codegen.T0, Codegen.T1); // T0 = 1 if T0 != T1
+        Codegen.genPush(Codegen.T0);
     }
 }
 
@@ -1830,7 +1875,12 @@ class GreaterNode extends BinaryExpNode {
     }
 
     public void codeGen() {
-        // TODO
+        myExp2.codeGen(); // RHS
+        myExp1.codeGen(); // LHS
+        Codegen.genPop(Codegen.T0); // LHS
+        Codegen.genPop(Codegen.T1); // RHS
+        Codegen.generate("sgt", Codegen.T0, Codegen.T0, Codegen.T1); // T0 = 1 if T0 > T1
+        Codegen.genPush(Codegen.T0);
     }
 }
 
@@ -1848,7 +1898,12 @@ class GreaterEqNode extends BinaryExpNode {
     }
 
     public void codeGen() {
-        // TODO
+        myExp2.codeGen(); // RHS
+        myExp1.codeGen(); // LHS
+        Codegen.genPop(Codegen.T0); // LHS
+        Codegen.genPop(Codegen.T1); // RHS
+        Codegen.generate("sge", Codegen.T0, Codegen.T0, Codegen.T1); // T0 = 1 if T0 >= T1
+        Codegen.genPush(Codegen.T0);
     }
 }
 
@@ -1866,7 +1921,12 @@ class LessNode extends BinaryExpNode {
     }
 
     public void codeGen() {
-        // TODO
+        myExp2.codeGen(); // RHS
+        myExp1.codeGen(); // LHS
+        Codegen.genPop(Codegen.T0); // LHS
+        Codegen.genPop(Codegen.T1); // RHS
+        Codegen.generate("slt", Codegen.T0, Codegen.T0, Codegen.T1); // T0 = 1 if T0 < T1
+        Codegen.genPush(Codegen.T0);
     }
 }
 
@@ -1884,7 +1944,12 @@ class LessEqNode extends BinaryExpNode {
     }
 
     public void codeGen() {
-        // TODO
+        myExp2.codeGen(); // RHS
+        myExp1.codeGen(); // LHS
+        Codegen.genPop(Codegen.T0); // LHS
+        Codegen.genPop(Codegen.T1); // RHS
+        Codegen.generate("sle", Codegen.T0, Codegen.T0, Codegen.T1); // T0 = 1 if T0 <= T1
+        Codegen.genPush(Codegen.T0);
     }
 }
 
@@ -1902,7 +1967,20 @@ class AndNode extends BinaryExpNode {
     }
 
     public void codeGen() {
-        // TODO
+        String falseLabel = Codegen.nextLabel();
+
+	// first LHS
+	myExp1.codeGen();
+	Codegen.genPop(Codegen.T0);
+	Codegen.generate("beq", Codegen.T0, Codegen.FALSE, falseLabel); // branch if LHS == FALSE
+	
+	// RHS
+	myExp2.codeGen();
+        Codegen.genPop(Codegen.T0);
+        Codegen.generate("beq", Codegen.T0, Codegen.FALSE, falseLabel); // branch if RHS == FALSE
+	
+	Codegen.genLabel(falseLabel);
+	Codegen.genPush(Codegen.T0); // push result
     }
 }
 
@@ -1920,6 +1998,19 @@ class OrNode extends BinaryExpNode {
     }
 
     public void codeGen() {
-        // TODO
+        String trueLabel = Codegen.nextLabel();
+
+        // first LHS
+        myExp1.codeGen();
+        Codegen.genPop(Codegen.T0);
+        Codegen.generate("beq", Codegen.T0, Codegen.TRUE, trueLabel); // branch if LHS == TRUE
+
+        // RHS
+        myExp2.codeGen();
+        Codegen.genPop(Codegen.T0);
+        Codegen.generate("beq", Codegen.T0, Codegen.TRUE, trueLabel); // branch if RHS == TRUE
+
+        Codegen.genLabel(falseLabel);
+        Codegen.genPush(Codegen.T0); // push result
     }
 }
