@@ -252,7 +252,7 @@ class StmtListNode extends ASTnode {
 		for (StmtNode node : myStmts) {
 			// pass in the return label so we can jump to
 			// it when it is return statment
-			node.codeGen(String retLabel);
+			node.codeGen(retLabel);
 		}
     }
 
@@ -648,7 +648,7 @@ class FctnDeclNode extends DeclNode {
 		Codegen.generate("move", Codegen.T0, Codegen.FP);
 		
 		// restore FP
-		Codegen.generateIndexed("lw", Codegen.FP, Codegen.FP. -4);
+		Codegen.generateIndexed("lw", Codegen.FP, Codegen.FP, -4);
 		
 		//restore SP
 		Codegen.generate("move", Codegen.SP, Codegen.T0);
@@ -1242,18 +1242,15 @@ class WriteStmtNode extends StmtNode {
 
     public void codeGen(String retLabel) {
 		myExp.codeGen();
-	}
-
-	// write int
-	if (myType.isIntType()) {
-	    CodeGen.genPop(CodeGen.A0, "4");
-	    CodeGen.generate("li", CodeGen.V0, "1");
-	} else if (myType.isStringType()) { // write string
-	    CodeGen.genPop(CodeGen.A0, "4");
-            CodeGen.generate("li", CodeGen.V0, "4");
-	}
-	CodeGen.generate("syscall");
-
+		// write int
+        if (myType.isIntegerType()) {
+            Codegen.genPop(Codegen.A0, "4");
+            Codegen.generate("li", Codegen.V0, "1");
+        } else if (myType.isStringType()) { // write string
+            Codegen.genPop(Codegen.A0, "4");
+            Codegen.generate("li", Codegen.V0, "4");
+        }
+		Codegen.generate("syscall");
     }
 
     // 2 children
@@ -2194,7 +2191,7 @@ class OrNode extends BinaryExpNode {
         Codegen.genPop(Codegen.T0);
         Codegen.generate("beq", Codegen.T0, Codegen.TRUE, trueLabel); // branch if RHS == TRUE
 
-        Codegen.genLabel(falseLabel);
+        Codegen.genLabel(trueLabel);
         Codegen.genPush(Codegen.T0); // push result
     }
 }
