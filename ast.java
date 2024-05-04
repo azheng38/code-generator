@@ -934,7 +934,12 @@ class PostIncStmtNode extends StmtNode {
     }
 
     public void codeGen() {
-        // TODO: complete this
+    	myExp.genAddr();
+	Codegen.genPop(Codegen.T0); // T0 = address
+	myExp.codeGen();
+	Codegen.genPop(Codegen.T1); // T1 = value
+	Codegen.generate("add", Codegen.T1, Codegen.T1, "1");
+	Codegen.generateIndexed("sw", Codegen.T1, Codegen.T0, 0);
     }
 
     // 1 child
@@ -961,7 +966,12 @@ class PostDecStmtNode extends StmtNode {
     }
 
     public void codeGen() {
-        // TODO: complete this
+    	myExp.genAddr();
+        Codegen.genPop(Codegen.T0); // T0 = address
+        myExp.codeGen();
+        Codegen.genPop(Codegen.T1); // T1 = value
+        Codegen.generate("sub", Codegen.T1, Codegen.T1, "1");
+        Codegen.generateIndexed("sw", Codegen.T1, Codegen.T0, 0);
     }
 
     // 1 child
@@ -1014,7 +1024,7 @@ class IfStmtNode extends StmtNode {
 	myExp.codeGen();
 	Codegen.genPop(Codegen.T0);
 	Codegen.generate("beq", Codegen.T0, Codegen.FALSE, falseLabel); // branch if false
-	myDeclList.codeGen();
+	//myDeclList.codeGen();
 	myStmtList.codeGen();
 	Codegen.genLabel(falseLabel);
 
@@ -1096,11 +1106,11 @@ class IfElseStmtNode extends StmtNode {
 	myExp.codeGen();
 	Codegen.genPop(Codegen.T0); // pop return to T0
 	Codegen.generate("beq", Codegen.T0, Codegen.FALSE, elseLabel); // branch to else
-	myThenDeclList.codeGen();
+	//myThenDeclList.codeGen();
 	myThenStmtList.codeGen();
 	Codegen.generate("b", doneLabel);
 	Codegen.genLabel(elseLabel);
-	myElseDeclList.codeGen();
+	//myElseDeclList.codeGen();
 	myElseStmtList.codeGen();
 	Codegen.genLabel(doneLabel);
     }
@@ -1160,7 +1170,7 @@ class WhileStmtNode extends StmtNode {
 	myExp.codeGen();
 	Codegen.genPop(Codegen.T0);
 	Codegen.generate("beq", Codegen.T0, Codegen.FALSE, doneLabel);
-	myDeclList.codeGen();
+	//myDeclList.codeGen();
 	myStmtList.codeGen();
 	Codegen.generate("b", startLabel);
 	Codegen.genLabel(doneLabel);
@@ -1193,8 +1203,11 @@ class ReadStmtNode extends StmtNode {
     }
 
     public void codeGen() {
-		CodeGen.generate("li", codeGen.V0, 5);
-		CodeGen.generate("syscall");
+	Codegen.generate("li", Codegen.V0, 5);
+	Codegen.generate("syscall");
+	myExp.genAddr(); // push the address of variable onto stack
+	Codegen.genPop(Codegen.T0); // pop address of variable into T0
+	Codegen.generateIndexed("sw", Codegen.V0, Codegen.T0, 0); // store V0 into address stored in T0
     }
 
     // 1 child (actually can only be an IdNode or a TupleAccessNode)
@@ -1222,20 +1235,19 @@ class WriteStmtNode extends StmtNode {
     }
 
     public void codeGen() {
-		myExp.codeGen();
+	myExp.codeGen();
 
-		// write int
-		if (myType.isIntType()) {
-			CodeGen.genPop(CodeGen.A0, "4");
-			CodeGen.generate("li", CodeGen.V0, "1");
-		}
-		else if (myType.isStringType()) { // write string
-			CodeGen.genPop(CodeGen.A0, "4");
+	// write int
+	if (myType.isIntType()) {
+	    CodeGen.genPop(CodeGen.A0, "4");
+	    CodeGen.generate("li", CodeGen.V0, "1");
+	} else if (myType.isStringType()) { // write string
+	    CodeGen.genPop(CodeGen.A0, "4");
             CodeGen.generate("li", CodeGen.V0, "4");
-		}
-
-		CodeGen.generate("syscall");
 	}
+	CodeGen.generate("syscall");
+
+    }
 
     // 2 children
     private ExpNode myExp;
