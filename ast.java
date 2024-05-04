@@ -1426,26 +1426,26 @@ class IdNode extends ExpNode {
 
     // not sure if this is correct
     public void genAddr() {
-	if (mySym.isGlobal()) { // global
-	    Codegen.generate("la", Codegen.T0, "_" + myStrVal);
-	} else { // local
-	    Codegen.generateIndexed("la", Codegen.T0, Codegen.FP, mySym.getOffset()); 
-	}
+		if (mySym.isGlobal()) { // global
+			Codegen.generate("la", Codegen.T0, "_" + myStrVal);
+		} else { // local
+			Codegen.generateIndexed("la", Codegen.T0, Codegen.FP, mySym.getOffset()); 
+		}
     }
 
     // not sure if this is correct
     public void codeGen() {
-	if (mySym.isGlobal()) { // global variable
-	    Codegen.generate("lw", Codegen.T0, "_" + myStrVal);
-	} else { // local variable
-	    Codegen.generateIndexed("lw", Codegen.T0, Codegen.FP, mySym.getOffset());
-	}
+		if (mySym.isGlobal()) { // global variable
+			Codegen.generate("lw", Codegen.T0, "_" + myStrVal);
+		} else { // local variable
+			Codegen.generateIndexed("lw", Codegen.T0, Codegen.FP, mySym.getOffset());
+		}
 
-	Codegen.genPush(Codegen.T0);
+		Codegen.genPush(Codegen.T0);
     }
 
     public void genJumpAndLink() {
-	Codegen.generate("jal", "_" + myStrVal); // jal _fctnName
+		Codegen.generate("jal", "_" + myStrVal); // jal _fctnName
     }
 
     private int myLineNum;
