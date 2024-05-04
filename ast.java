@@ -907,7 +907,7 @@ class AssignStmtNode extends StmtNode {
     }
 
     public void codeGen() {
-        // TODO: complete this
+        myAssign.codeGen();
     }
 
     // 1 child
@@ -1689,8 +1689,21 @@ class AssignExpNode extends ExpNode {
         if (indent != -1)  p.print(")");    
     }
 
-	public void codeGen() {
-		// TODO
+	public void codeGen() { 
+		// LHS
+		if (myLhs instanceof IdNode)
+			((IdNode)myLhs).genAddress(); // put lhs address into T0	
+		Codegen.push(Codegen.T0); // push address onto stack
+	
+		// RHS
+		myExp.codeGen(); // evaluate and push; leave on stack
+
+		Codegen.pop(Codegen.T1); // RHS value popped into t1
+		Codegen.pop(Codegen.T0); // LHS address popped into t0
+		
+		Codegen.generateIndexed("sw", Codegen.T1, Codegen.T0, 0); // store value in $t1 at address held in $t0
+		
+		Codegen.push(Codegen.T1); // push $t1 back onto stack
 	}
 
     // 2 children
