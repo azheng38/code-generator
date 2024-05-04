@@ -1009,7 +1009,15 @@ class IfStmtNode extends StmtNode {
     }
 
     public void codeGen() {
-        // TODO: complete this
+	String falseLabel = Codegen.nextLabel();
+	
+	myExp.codeGen();
+	Codegen.genPop(Codegen.T0);
+	Codegen.generate("beq", Codegen.T0, Codegen.FALSE, falseLabel); // branch if false
+	myDeclList.codeGen();
+	myStmtList.codeGen();
+	Codegen.genLabel(falseLabel);
+
     }
 
     // 3 children
@@ -1082,7 +1090,19 @@ class IfElseStmtNode extends StmtNode {
     }
 
     public void codeGen() {
-        // TODO: complete this
+    	String doneLabel = Codegen.nextLabel();
+	String elseLabel = Codegen.nextLabel();
+
+	myExp.codeGen();
+	Codegen.genPop(Codegen.T0); // pop return to T0
+	Codegen.generate("beq", Codegen.T0, Codegen.FALSE, elseLabel); // branch to else
+	myThenDeclList.codeGen();
+	myThenStmtList.codeGen();
+	Codegen.generate("b", doneLabel);
+	Codegen.genLabel(elseLabel);
+	myElseDeclList.codeGen();
+	myElseStmtList.codeGen();
+	Codegen.genLabel(doneLabel);
     }
 
     // 5 children
@@ -1134,7 +1154,16 @@ class WhileStmtNode extends StmtNode {
     }
 
     public void codeGen() {
-        // TODO: complete this
+	String startLabel = Codegen.nextLabel();
+	String doneLabel = Codegen.nextLabel();
+	Codegen.genLabel(startLabel); // evaluate exp during every loop
+	myExp.codeGen();
+	Codegen.genPop(Codegen.T0);
+	Codegen.generate("beq", Codegen.T0, Codegen.FALSE, doneLabel);
+	myDeclList.codeGen();
+	myStmtList.codeGen();
+	Codegen.generate("b", startLabel);
+	Codegen.genLabel(doneLabel);
     }
 
     // 3 children
@@ -1431,6 +1460,7 @@ class IdNode extends ExpNode {
 		} else { // local
 			Codegen.generateIndexed("la", Codegen.T0, Codegen.FP, mySym.getOffset()); 
 		}
+		Codegen.genPush(Codegen.T0);
     }
 
     // not sure if this is correct
@@ -1440,7 +1470,6 @@ class IdNode extends ExpNode {
 		} else { // local variable
 			Codegen.generateIndexed("lw", Codegen.T0, Codegen.FP, mySym.getOffset());
 		}
-
 		Codegen.genPush(Codegen.T0);
     }
 
@@ -1692,7 +1721,7 @@ class AssignExpNode extends ExpNode {
 	public void codeGen() { 
 		// LHS
 		if (myLhs instanceof IdNode)
-			((IdNode)myLhs).genAddress(); // put lhs address into T0	
+			((IdNode)myLhs).genAddr(); // put lhs address into T0	
 		Codegen.push(Codegen.T0); // push address onto stack
 	
 		// RHS
