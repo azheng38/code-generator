@@ -224,7 +224,9 @@ class DeclListNode extends ASTnode {
 }
 
 class StmtListNode extends ASTnode {
-    public StmtListNode(List<StmtNode> S) {
+    public String retLabel = "";
+
+	public StmtListNode(List<StmtNode> S) {
         myStmts = S;
     }
 
@@ -232,7 +234,8 @@ class StmtListNode extends ASTnode {
      * nameAnalysis
      * Given a symbol table symTab, process each statement in the list.
      ***/
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, String retLabel) {
+		this.retLabel = retLabel;
         for (StmtNode node : myStmts) {
             node.nameAnalysis(symTab);
         }
@@ -247,7 +250,9 @@ class StmtListNode extends ASTnode {
 
     public void codeGen() {
 		for (StmtNode node : myStmts) {
-			node.codeGen();
+			// pass in the return label so we can jump to
+			// it when it is return statment
+			node.codeGen(String retLabel);
 		}
     }
 
@@ -347,9 +352,9 @@ class FctnBodyNode extends ASTnode {
      * - process the declaration list
      * - process the statement list
      ***/
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, String retLabel) {
         myDeclList.nameAnalysis(symTab);
-        myStmtList.nameAnalysis(symTab);
+        myStmtList.nameAnalysis(symTab, retLabel);
     }
 
     public void unparse(PrintWriter p, int indent) {
@@ -533,6 +538,7 @@ class FctnDeclNode extends DeclNode {
     public Sym nameAnalysis(SymTable symTab) {
         String name = myId.name();
         FctnSym sym = null;
+		String retLabel = "_" + myId.name() + "_exit";
         try {
 			if (symTab.lookupLocal(name) != null) {
 				ErrMsg.fatal(myId.lineNum(), myId.charNum(),
@@ -579,7 +585,7 @@ class FctnDeclNode extends DeclNode {
         symTab.setOffset(-8);  // offset of first local
         int temp = symTab.getOffset();
 
-        myBody.nameAnalysis(symTab); // process the function body
+        myBody.nameAnalysis(symTab, retLabel); // process the function body
        
         if (sym != null) {
             sym.setLocalsSize(-1*(symTab.getOffset() - temp));
@@ -621,19 +627,20 @@ class FctnDeclNode extends DeclNode {
 			Codegen.genLabel("\t_" + myId.name());
 		}
 
-		// Entry
+		// Prologue
 		Codegen.genPush(Codegen.RA); // push return addr
 		Codegen.genPush(Codegen.FP); // push control link
 
 		Codegen.generate("addu", Codegen.FP, Codegen.SP, "8"); // set up FP
-		int offset = myId.sym().getOffset();
-		Codegen.generate("subu", Codegen.SP, Codegen.SP, -offset); // Push space for the locals
+		int local_space = myId.localsSize();
+		Codegen.generate("subu", Codegen.SP, Codegen.SP, local_space); // Push space for the locals
 
 		// body
 		myBody.codeGen();
 
-		// function exit:
-		
+		// Epilogue:
+		Codegen.genLabel("_" + myId.name() + "_exit");
+
 		// load return address
 		Codegen.generateIndexed("lw", Codegen.RA, Codegen.FP, 0);
 		
@@ -906,7 +913,7 @@ class AssignStmtNode extends StmtNode {
         p.println(".");
     }
 
-    public void codeGen() {
+    public void codeGen(String retLabel) {
         myAssign.codeGen();
     }
 
@@ -933,7 +940,7 @@ class PostIncStmtNode extends StmtNode {
         p.println("++.");
     }
 
-    public void codeGen() {
+    public void codeGen(String retLabel) {
         // TODO: complete this
     }
 
@@ -960,7 +967,7 @@ class PostDecStmtNode extends StmtNode {
         p.println("--.");
     }
 
-    public void codeGen() {
+    public void codeGen(String retLabel) {
         // TODO: complete this
     }
 
@@ -1008,7 +1015,7 @@ class IfStmtNode extends StmtNode {
         p.println("]");  
     }
 
-    public void codeGen() {
+    public void codeGen(String retLabel) {
         // TODO: complete this
     }
 
@@ -1081,7 +1088,7 @@ class IfElseStmtNode extends StmtNode {
         p.println("]"); 
     }
 
-    public void codeGen() {
+    public void codeGen(String retLabel) {
         // TODO: complete this
     }
 
@@ -1133,7 +1140,7 @@ class WhileStmtNode extends StmtNode {
         p.println("]");
     }
 
-    public void codeGen() {
+    public void codeGen(String retLabel) {
         // TODO: complete this
     }
 
@@ -1163,7 +1170,7 @@ class ReadStmtNode extends StmtNode {
         p.println(".");
     }
 
-    public void codeGen() {
+    public void codeGen(String retLabel) {
 		CodeGen.generate("li", codeGen.V0, 5);
 		CodeGen.generate("syscall");
     }
@@ -1192,7 +1199,7 @@ class WriteStmtNode extends StmtNode {
         p.println(".");
     }
 
-    public void codeGen() {
+    public void codeGen(String retLabel) {
 		myExp.codeGen();
 
 		// write int
@@ -1232,7 +1239,7 @@ class CallStmtNode extends StmtNode {
         p.println(".");
     }
 
-    public void codeGen() {
+    public void codeGen(String retLabel) {
         myCall.codeGen(); // since we did check for non-void ret in CallExpNode, no need to pop here
     }
 
@@ -1266,9 +1273,20 @@ class ReturnStmtNode extends StmtNode {
         p.println(".");
     }
 
-    public void codeGen() {
-        // TODO: complete this
-    }
+    public void codeGen(String retLabel) {
+		if (myExp != null) {
+			if (myExp instanceof IdNode) {
+				// returns a value
+				if (!myExp.sym().getType().isVoidType()) {
+					Codegen.pop(Codegen.V0);		
+				}	
+			}
+		} // no return value just go on to next step
+		
+		// can finally use the retLabel
+		Codegen.generate("j", retLabel);
+	
+	}
 
     // 1 child
     private ExpNode myExp; // possibly null
@@ -1692,8 +1710,8 @@ class AssignExpNode extends ExpNode {
 	public void codeGen() { 
 		// LHS
 		if (myLhs instanceof IdNode)
-			((IdNode)myLhs).genAddress(); // put lhs address into T0	
-		Codegen.push(Codegen.T0); // push address onto stack
+			// put lhs address into T0 and push
+			((IdNode)myLhs).genAddress();
 	
 		// RHS
 		myExp.codeGen(); // evaluate and push; leave on stack
