@@ -1,6 +1,7 @@
 import java.io.*;
 import java.util.*;
 
+
 // **********************************************************************
 // INITIAL ast.java FOR P6 (available prior to last late day for P5) 
 // - consists of ast.java provided for P5 along with the additions 
@@ -214,9 +215,9 @@ class DeclListNode extends ASTnode {
     }
 
     public void codeGen() {
-		for (DeclNode node : myDecls) {
-			node.codeGen();
-		}
+	for (DeclNode node : myDecls) {
+	    node.codeGen();
+	}
     }
 
     // list of children (DeclNodes)
@@ -381,6 +382,7 @@ abstract class DeclNode extends ASTnode {
      * Note: a formal decl needs to return a sym
      ***/
     abstract public Sym nameAnalysis(SymTable symTab);
+    abstract public void codeGen();
 }
 
 class VarDeclNode extends DeclNode {
@@ -496,7 +498,7 @@ class VarDeclNode extends DeclNode {
 
     public void codeGen() {
 		// global variable, needs to be stored in static data area
-		if (myId.mySym().isGlobal()) {
+		if (myId.sym().isGlobal()) {
 			Codegen.generate("\t.data");
 			Codegen.generate("\t.align", "2");
 			Codegen.genLabel("_" + myId.name(), ".space 4");
@@ -729,6 +731,10 @@ class FormalDeclNode extends DeclNode {
         myId.unparse(p, 0);
     }
 
+    public void codeGen () {
+
+    }
+
     // 2 children
     private TypeNode myType;
     private IdNode myId;
@@ -797,6 +803,10 @@ class TupleDeclNode extends DeclNode {
         myDeclList.unparse(p, indent+4);
         doIndent(p, indent);
         p.println("}.\n");
+    }
+
+    public void codeGen() {
+
     }
 
     // 2 children
@@ -941,12 +951,13 @@ class PostIncStmtNode extends StmtNode {
     }
 
     public void codeGen(String retLabel) {
-    	myExp.genAddr();
-		Codegen.genPop(Codegen.T0); // T0 = address
-		myExp.codeGen();
-		Codegen.genPop(Codegen.T1); // T1 = value
-		Codegen.generate("add", Codegen.T1, Codegen.T1, "1");
-		Codegen.generateIndexed("sw", Codegen.T1, Codegen.T0, 0);
+    	if(myExp instanceof IdNode)  // must be due to BASE grammar
+            ((IdNode)myExp).genAddr();
+	Codegen.genPop(Codegen.T0); // T0 = address
+	myExp.codeGen();
+	Codegen.genPop(Codegen.T1); // T1 = value
+	Codegen.generate("add", Codegen.T1, Codegen.T1, "1");
+	Codegen.generateIndexed("sw", Codegen.T1, Codegen.T0, 0);
     }
 
     // 1 child
@@ -973,7 +984,8 @@ class PostDecStmtNode extends StmtNode {
     }
 
     public void codeGen(String retLabel) {
-    	myExp.genAddr();
+    	if(myExp instanceof IdNode)  // must be due to BASE grammar
+            ((IdNode)myExp).genAddr();
         Codegen.genPop(Codegen.T0); // T0 = address
         myExp.codeGen();
         Codegen.genPop(Codegen.T1); // T1 = value
@@ -1211,7 +1223,8 @@ class ReadStmtNode extends StmtNode {
     public void codeGen(String retLabel) {
 		Codegen.generate("li", Codegen.V0, 5);
 		Codegen.generate("syscall");
-		myExp.genAddr(); // push the address of variable onto stack
+		if(myExp instanceof IdNode)  // must be due to BASE grammar
+		    ((IdNode)myExp).genAddr(); // push the address of variable onto stack
 		Codegen.genPop(Codegen.T0); // pop address of variable into T0
 		Codegen.generateIndexed("sw", Codegen.V0, Codegen.T0, 0); // store V0 into address stored in T0
     }
@@ -1241,13 +1254,13 @@ class WriteStmtNode extends StmtNode {
     }
 
     public void codeGen(String retLabel) {
-		myExp.codeGen();
+	myExp.codeGen();
 		// write int
         if (myType.isIntegerType()) {
-            Codegen.genPop(Codegen.A0, "4");
+            Codegen.genPop(Codegen.A0);
             Codegen.generate("li", Codegen.V0, "1");
         } else if (myType.isStringType()) { // write string
-            Codegen.genPop(Codegen.A0, "4");
+            Codegen.genPop(Codegen.A0);
             Codegen.generate("li", Codegen.V0, "4");
         }
 		Codegen.generate("syscall");
@@ -1315,8 +1328,8 @@ class ReturnStmtNode extends StmtNode {
 		if (myExp != null) {
 			if (myExp instanceof IdNode) {
 				// returns a value
-				if (!myExp.sym().getType().isVoidType()) {
-					Codegen.pop(Codegen.V0);		
+				if (!((IdNode)myExp).sym().getType().isVoidType()) {
+					Codegen.genPop(Codegen.V0);		
 				}	
 			}
 		} // no return value just go on to next step
@@ -1523,7 +1536,7 @@ class IntLitNode extends ExpNode {
 
     public void codeGen() {
 		Codegen.generate("li", Codegen.T0, myIntVal);
-		Codegen.push(Codegen.t0);
+		Codegen.genPush(Codegen.T0);
     }
 
     private int myLineNum;
@@ -1532,8 +1545,7 @@ class IntLitNode extends ExpNode {
 }
 
 class StrLitNode extends ExpNode {
-	static HashTable<String, StrLitNode> stringStored 
-		= new HashTable<String, String>();
+    public static HashTable<String, String> stringStored = new HashTable<String, String>();
 
     public StrLitNode(int lineNum, int charNum, String strVal) {
         myLineNum = lineNum;
@@ -1546,33 +1558,32 @@ class StrLitNode extends ExpNode {
     }
 
     public void codeGen() {
-		// hashtable to check if string literal is already stored in
-		// static data area
+	// hashtable to check if string literal is already stored in
+	// static data area
 		
-		// hash table does not contain string lit; this string is not
-		// stored in static data area yet
-		if (!stringStore.containsKey(myStrVal)) {
-			codeGen.generate("\t.data");
-			label = Codegen.nextLabel(); // generate a new label
-			Codegen.genLabel(label, ".asciiz \""+ myStrVal + "\"");
+	// hash table does not contain string lit; this string is not
+	// stored in static data area yet
+	if (!stringStored.containsKey(myStrVal)) {
+	    label = Codegen.nextLabel(); // generate a new label
+	    Codegen.genLabel(label, ".asciiz \""+ myStrVal + "\"");
 
-			Codegen.generate("\t.text");
-			Codegen.generate("la", Codegen.T0, label);
-			Codegen.push(Codegen.T0);
+	    Codegen.generate("\t.text");
+   	    Codegen.generate("la", Codegen.T0, label);
+	    Codegen.genPush(Codegen.T0);
 	
-			// add it to the hashtable
-			stringStored.add(myStrVal, label);
+	    // add it to the hashtable
+	    stringStored.add(myStrVal, label);
 		
-		} else { // string has been stored in static data area
-			label = stringStored.get(myStrVal);	
+	} else { // string has been stored in static data area
+	    label = stringStored.get(myStrVal);	
 		
-		    Codegen.generate("\t.text");
+	    Codegen.generate("\t.text");
             Codegen.generate("la", Codegen.T0, label);
-			Codegen.push(Codegen.T0);
-		}
+	    Codegen.genPush(Codegen.T0);
+	}
     }
 
-	public String label; // this is the label of this string literal
+    public String label; // this is the label of this string literal
     private int myLineNum;
     private int myCharNum;
     private String myStrVal;
@@ -1714,6 +1725,10 @@ class TupleAccessNode extends ExpNode {
         myId.unparse(p, 0);
     }
 
+    public void codeGen() {
+
+    }
+
     // 4 children
     private ExpNode myLoc;	
     private IdNode myId;
@@ -1755,12 +1770,12 @@ class AssignExpNode extends ExpNode {
 		// RHS
 		myExp.codeGen(); // evaluate and push; leave on stack
 
-		Codegen.pop(Codegen.T1); // RHS value popped into t1
-		Codegen.pop(Codegen.T0); // LHS address popped into t0
+		Codegen.genPop(Codegen.T1); // RHS value popped into t1
+		Codegen.genPop(Codegen.T0); // LHS address popped into t0
 		
 		Codegen.generateIndexed("sw", Codegen.T1, Codegen.T0, 0); // store value in $t1 at address held in $t0
 		
-		Codegen.push(Codegen.T1); // push $t1 back onto stack
+		Codegen.genPush(Codegen.T1); // push $t1 back onto stack
 	}
 
     // 2 children
@@ -1869,7 +1884,7 @@ class NotNode extends UnaryExpNode {
 	String falseLabel = Codegen.nextLabel();
 	myExp.codeGen(); 
 	Codegen.genPop(Codegen.T0);
-	Codegen.generate("beq", Codegen.T0, Codegen.TRUE, label); // b if T0 == 1
+	Codegen.generate("beq", Codegen.T0, Codegen.TRUE, trueLabel); // b if T0 == 1
 	Codegen.generate("add", Codegen.T0, Codegen.T0, 1); // If T0 == 0 then T0 += 1
 	Codegen.generate("b", falseLabel); // to go end
 	Codegen.genLabel(trueLabel);
