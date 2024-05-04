@@ -282,8 +282,10 @@ class ExpListNode extends ASTnode {
     }
 
     public void codeGen() {
-        // TODO: complete this
-    }
+		for (ExpNode node : myExps) {
+			node.codeGen();
+		}
+	}
 
     // list of children (ExpNodes)
     private List<ExpNode> myExps;
@@ -356,7 +358,7 @@ class FctnBodyNode extends ASTnode {
     }
 
     public void codeGen() {
-        //TODO
+		myStmtList.codeGen();
     }
 
     // 2 children
@@ -623,7 +625,29 @@ class FctnDeclNode extends DeclNode {
 		Codegen.genPush(Codegen.RA); // push return addr
 		Codegen.genPush(Codegen.FP); // push control link
 
-		// set the FP
+		Codegen.generate("addu", Codegen.FP, Codegen.SP, "8"); // set up FP
+		int offset = myId.sym().getOffset();
+		Codegen.generate("subu", Codegen.SP, Codegen.SP, -offset); // Push space for the locals
+
+		// body
+		myBody.codeGen();
+
+		// function exit:
+		
+		// load return address
+		Codegen.generateIndexed("lw", Codegen.RA, Codegen.FP, 0);
+		
+		// FP holds address to which we need to restore SP
+		Codegen.generate("move", Codegen.T0, Codegen.FP);
+		
+		// restore FP
+		Codegen.generateIndexed("lw", Codegen.FP, Codegen.FP. -4);
+		
+		//restore SP
+		Codegen.generate("move", Codegen.SP, Codegen.T0);
+
+		// return
+		Codegen.generate("jr", Codegen.RA);
     }
 
     // 4 children
