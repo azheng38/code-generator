@@ -50,7 +50,7 @@ import java.util.*;
 //       TupleNode           IdNode
 //
 //     StmtNode:
-//       AssignStmtNode      AssignExpNode
+
 //       PostIncStmtNode     ExpNode
 //       PostDecStmtNode     ExpNode
 //       IfStmtNode          ExpNode, DeclListNode, StmtListNode
@@ -238,7 +238,7 @@ class StmtListNode extends ASTnode {
     public void nameAnalysis(SymTable symTab, String retLabel) {
 		this.retLabel = retLabel;
         for (StmtNode node : myStmts) {
-            node.nameAnalysis(symTab);
+            node.nameAnalysis(symTab, retLabel);
         }
     } 
 
@@ -540,6 +540,7 @@ class FctnDeclNode extends DeclNode {
     public Sym nameAnalysis(SymTable symTab) {
         String name = myId.name();
         FctnSym sym = null;
+		//String newLabel = Codegen.nextLabel();
 		String retLabel = "_" + myId.name() + "_exit";
         try {
 			if (symTab.lookupLocal(name) != null) {
@@ -656,7 +657,12 @@ class FctnDeclNode extends DeclNode {
 		Codegen.generate("move", Codegen.SP, Codegen.T0);
 
 		// return
-		Codegen.generate("jr", Codegen.RA);
+		if(!myId.isMain()) {
+		    Codegen.generate("jr", Codegen.RA);
+		} else {
+			Codegen.generate("li", Codegen.V0, "10");
+			Codegen.generate("syscall");
+		}
     }
 
     // 4 children
@@ -901,7 +907,8 @@ class TupleNode extends TypeNode {
 // **********************************************************************
 
 abstract class StmtNode extends ASTnode {
-    abstract public void nameAnalysis(SymTable symTab);
+    abstract public void nameAnalysis(SymTable symTab, String retLabel);
+	abstract public void codeGen(String retLabel);
 }
 
 class AssignStmtNode extends StmtNode {
@@ -913,7 +920,7 @@ class AssignStmtNode extends StmtNode {
      * nameAnalysis
      * Given a symbol table symTab, perform name analysis on this node's child
      ***/
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, String retLabel) {
         myAssign.nameAnalysis(symTab);
     }
 
@@ -940,7 +947,7 @@ class PostIncStmtNode extends StmtNode {
      * nameAnalysis
      * Given a symbol table symTab, perform name analysis on this node's child
      ***/
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, String retLabel) {
         myExp.nameAnalysis(symTab);
     }
 
@@ -953,11 +960,11 @@ class PostIncStmtNode extends StmtNode {
     public void codeGen(String retLabel) {
     	if(myExp instanceof IdNode)  // must be due to BASE grammar
             ((IdNode)myExp).genAddr();
-	Codegen.genPop(Codegen.T0); // T0 = address
-	myExp.codeGen();
-	Codegen.genPop(Codegen.T1); // T1 = value
-	Codegen.generate("add", Codegen.T1, Codegen.T1, "1");
-	Codegen.generateIndexed("sw", Codegen.T1, Codegen.T0, 0);
+	    Codegen.genPop(Codegen.T0); // T0 = address
+		myExp.codeGen();
+		Codegen.genPop(Codegen.T1); // T1 = value
+		Codegen.generate("add", Codegen.T1, Codegen.T1, "1");
+		Codegen.generateIndexed("sw", Codegen.T1, Codegen.T0, 0);
     }
 
     // 1 child
@@ -973,7 +980,7 @@ class PostDecStmtNode extends StmtNode {
      * nameAnalysis
      * Given a symbol table symTab, perform name analysis on this node's child
      ***/
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, String retLabel) {
         myExp.nameAnalysis(symTab);
     }
 
@@ -1012,11 +1019,11 @@ class IfStmtNode extends StmtNode {
      * - process the decls and stmts
      * - exit the scope
      ***/
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, String retLabel) {
         myExp.nameAnalysis(symTab);
         symTab.addScope();
         myDeclList.nameAnalysis(symTab);
-        myStmtList.nameAnalysis(symTab);
+        myStmtList.nameAnalysis(symTab, retLabel);
         try {
             symTab.removeScope();
         } catch (EmptySymTableException ex) {
@@ -1076,11 +1083,11 @@ class IfElseStmtNode extends StmtNode {
      * - process the decls and stmts of else
      * - exit the scope
      ***/
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, String retLabel) {
         myExp.nameAnalysis(symTab);
         symTab.addScope();
         myThenDeclList.nameAnalysis(symTab);
-        myThenStmtList.nameAnalysis(symTab);
+        myThenStmtList.nameAnalysis(symTab, retLabel);
         try {
             symTab.removeScope();
         } catch (EmptySymTableException ex) {
@@ -1090,7 +1097,7 @@ class IfElseStmtNode extends StmtNode {
         }
         symTab.addScope();
         myElseDeclList.nameAnalysis(symTab);
-        myElseStmtList.nameAnalysis(symTab);
+        myElseStmtList.nameAnalysis(symTab, retLabel);
         try {
             symTab.removeScope();
         } catch (EmptySymTableException ex) {
@@ -1156,11 +1163,11 @@ class WhileStmtNode extends StmtNode {
      * - process the decls and stmts
      * - exit the scope
      ***/
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, String retLabel) {
         myExp.nameAnalysis(symTab);
         symTab.addScope();
         myDeclList.nameAnalysis(symTab);
-        myStmtList.nameAnalysis(symTab);
+        myStmtList.nameAnalysis(symTab, retLabel);
         try {
             symTab.removeScope();
         } catch (EmptySymTableException ex) {
@@ -1209,7 +1216,7 @@ class ReadStmtNode extends StmtNode {
      * nameAnalysis
      * Given a symbol table symTab, perform name analysis on this node's child
      ***/
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, String retLabel) {
         myExp.nameAnalysis(symTab);
     } 
 
@@ -1242,7 +1249,7 @@ class WriteStmtNode extends StmtNode {
      * nameAnalysis
      * Given a symbol table symTab, perform name analysis on this node's child
      ***/
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, String retLabel) {
         myExp.nameAnalysis(symTab);
     }
     
@@ -1254,15 +1261,21 @@ class WriteStmtNode extends StmtNode {
     }
 
     public void codeGen(String retLabel) {
-	myExp.codeGen();
+		myExp.codeGen();
+		/*
+		if (myType == null) {
+			Codegen.genPop(Codegen.T0);
+			return ;
+		}*/
+		
 		// write int
-        if (myType.isIntegerType()) {
-            Codegen.genPop(Codegen.A0);
-            Codegen.generate("li", Codegen.V0, "1");
-        } else if (myType.isStringType()) { // write string
+        if (myExp instanceof StrLitNode) { // write string
             Codegen.genPop(Codegen.A0);
             Codegen.generate("li", Codegen.V0, "4");
-        }
+        } else {
+			Codegen.genPop(Codegen.A0);
+            Codegen.generate("li", Codegen.V0, "1");	
+		}
 		Codegen.generate("syscall");
     }
 
@@ -1280,7 +1293,7 @@ class CallStmtNode extends StmtNode {
      * nameAnalysis
      * Given a symbol table symTab, perform name analysis on this node's child
      ***/
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, String retLabel) {
         myCall.nameAnalysis(symTab);
     }
 
@@ -1308,7 +1321,7 @@ class ReturnStmtNode extends StmtNode {
      * Given a symbol table symTab, perform name analysis on this node's child,
      * if it has one
      ***/
-    public void nameAnalysis(SymTable symTab) {
+    public void nameAnalysis(SymTable symTab, String retLabel) {
         if (myExp != null) {
             myExp.nameAnalysis(symTab);
         }
@@ -1326,11 +1339,14 @@ class ReturnStmtNode extends StmtNode {
 
     public void codeGen(String retLabel) {
 		if (myExp != null) {
+			myExp.codeGen();
 			if (myExp instanceof IdNode) {
 				// returns a value
 				if (!((IdNode)myExp).sym().getType().isVoidType()) {
 					Codegen.genPop(Codegen.V0);		
 				}	
+			} else {
+				Codegen.genPop(Codegen.V0);
 			}
 		} // no return value just go on to next step
 		
@@ -1545,7 +1561,6 @@ class IntLitNode extends ExpNode {
 }
 
 class StrLitNode extends ExpNode {
-    public static HashTable<String, String> stringStored = new HashTable<String, String>();
 
     public StrLitNode(int lineNum, int charNum, String strVal) {
         myLineNum = lineNum;
@@ -1558,31 +1573,32 @@ class StrLitNode extends ExpNode {
     }
 
     public void codeGen() {
-	// hashtable to check if string literal is already stored in
-	// static data area
+		// hashtable to check if string literal is already stored in
+		// static data area
 		
-	// hash table does not contain string lit; this string is not
-	// stored in static data area yet
-	if (!stringStored.containsKey(myStrVal)) {
-	    label = Codegen.nextLabel(); // generate a new label
-	    Codegen.genLabel(label, ".asciiz \""+ myStrVal + "\"");
-
-	    Codegen.generate("\t.text");
-   	    Codegen.generate("la", Codegen.T0, label);
-	    Codegen.genPush(Codegen.T0);
+		// hash table does not contain string lit; this string is not
+		// stored in static data area yet
+		if (!stringStored.containsKey(myStrVal)) {
+			label = Codegen.nextLabel(); // generate a new label
+			Codegen.p.println(".data");
+			Codegen.p.println(label + ": .asciiz " + myStrVal);
+			Codegen.generate(".text");
+			Codegen.generate("la", Codegen.T0, label);
+			Codegen.genPush(Codegen.T0);
 	
-	    // add it to the hashtable
-	    stringStored.add(myStrVal, label);
+    	    // add it to the hashtable
+	        stringStored.put(myStrVal, label);
 		
-	} else { // string has been stored in static data area
-	    label = stringStored.get(myStrVal);	
+	    } else { // string has been stored in static data area
+	        label = stringStored.get(myStrVal);	
 		
-	    Codegen.generate("\t.text");
+    	    Codegen.generate(".text");
             Codegen.generate("la", Codegen.T0, label);
-	    Codegen.genPush(Codegen.T0);
-	}
+	        Codegen.genPush(Codegen.T0);
+	    }
     }
 
+	public static HashMap<String, String> stringStored = new HashMap<String, String>();
     public String label; // this is the label of this string literal
     private int myLineNum;
     private int myCharNum;
@@ -1765,6 +1781,8 @@ class AssignExpNode extends ExpNode {
 		if (myLhs instanceof IdNode) {
 			// put lhs address into T0 and push
 			((IdNode)myLhs).genAddr();
+		} else {
+			myLhs.codeGen();
 		}
 	
 		// RHS
@@ -1775,7 +1793,7 @@ class AssignExpNode extends ExpNode {
 		
 		Codegen.generateIndexed("sw", Codegen.T1, Codegen.T0, 0); // store value in $t1 at address held in $t0
 		
-		Codegen.genPush(Codegen.T1); // push $t1 back onto stack
+		//Codegen.genPush(Codegen.T1); // push $t1 back onto stack
 	}
 
     // 2 children
@@ -1816,9 +1834,9 @@ class CallExpNode extends ExpNode {
 
     public void codeGen() {
         if (myExpList != null) myExpList.codeGen(); // step 1
-    	myId.genJumpAndLink(); // step 2
-	if(!(myId.sym().getType().isVoidType())) // step 3
-	    Codegen.genPush(Codegen.V0); 
+		myId.genJumpAndLink(); // step 2
+		if(!(myId.sym().getType().isVoidType())) // step 3
+			Codegen.genPush(Codegen.V0); 
     }
 
     // 2 children
@@ -1931,12 +1949,12 @@ class PlusNode extends BinaryExpNode {
     }
 
     public void codeGen() {
-        myExp2.codeGen(); // push RHS
-	myExp1.codeGen(); // push LHS
-	Codegen.genPop(Codegen.T0); // pop LHS
-	Codegen.genPop(Codegen.T1); // pop RHS
-	Codegen.generate("add", Codegen.T0, Codegen.T0, Codegen.T1);
-	Codegen.genPush(Codegen.T0);
+        myExp1.codeGen(); // push LHS
+	    myExp2.codeGen(); // push RHS
+ 	    Codegen.genPop(Codegen.T1); // pop RHS
+	    Codegen.genPop(Codegen.T0); // pop LHS
+	    Codegen.generate("add", Codegen.T0, Codegen.T0, Codegen.T1);
+	    Codegen.genPush(Codegen.T0);
     }
 }
 

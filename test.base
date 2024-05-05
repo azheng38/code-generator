@@ -1,0 +1,49 @@
+void pythagoreanTriplets{integer limit} [
+    integer a.
+    integer b.
+    integer c.
+    integer m.
+
+    c = 0.
+    m = 2.
+    while c < limit [
+        logical done.
+        integer n.
+
+        done = False.
+        n = 1.
+
+        while n < m & ~done [
+            a = m * m - n * n.
+            b = 2 * m * n.
+            c = m * m + n * n.
+
+            if c > limit [
+                done = True.
+            ] else [
+                write << a.
+                write << " ".
+                write << b.
+                write << " ".
+                write << c.
+                write << "\n".
+            ]
+        ]
+    ]
+]
+
+void main{} [
+  integer n.
+
+  write << "Enter the limit: ".
+  read >> n.
+  write << "\n".
+
+  if n < 0 [
+    write << "Error: cannot find fibonacci sequence indexed by negative number".
+    write << "\n".
+    return.
+  ]
+
+  pythagoreanTriplets(n).
+]
