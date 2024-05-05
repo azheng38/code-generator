@@ -652,6 +652,8 @@ class FctnDeclNode extends DeclNode {
 		
 		// restore FP
 		Codegen.generateIndexed("lw", Codegen.FP, Codegen.FP, -4);
+		int params_space = myId.paramsSize();
+		Codegen.generate("addu", Codegen.FP, Codegen.FP, params_space);
 		
 		//restore SP
 		Codegen.generate("move", Codegen.SP, Codegen.T0);
@@ -958,13 +960,17 @@ class PostIncStmtNode extends StmtNode {
     }
 
     public void codeGen(String retLabel) {
-    	if(myExp instanceof IdNode)  // must be due to BASE grammar
-            ((IdNode)myExp).genAddr();
-	    Codegen.genPop(Codegen.T0); // T0 = address
-		myExp.codeGen();
-		Codegen.genPop(Codegen.T1); // T1 = value
-		Codegen.generate("add", Codegen.T1, Codegen.T1, "1");
-		Codegen.generateIndexed("sw", Codegen.T1, Codegen.T0, 0);
+    	if(myExp instanceof IdNode) {  // must be due to BASE grammar
+	    myExp.codeGen();
+	    Codegen.genPop(Codegen.T1); // T1 = value
+	    Codegen.generate("add", Codegen.T1, Codegen.T1, "1");
+	    Sym sym = ((IdNode)myExp).sym();
+	    if (sym.isGlobal()) {
+	        Codegen.generate("sw", Codegen.T1, "_" + ((IdNode)myExp).name());
+	    } else {
+		Codegen.generateIndexed("sw", Codegen.T1, Codegen.FP, sym.getOffset());
+	    }
+	}
     }
 
     // 1 child
@@ -991,13 +997,17 @@ class PostDecStmtNode extends StmtNode {
     }
 
     public void codeGen(String retLabel) {
-    	if(myExp instanceof IdNode)  // must be due to BASE grammar
-            ((IdNode)myExp).genAddr();
-        Codegen.genPop(Codegen.T0); // T0 = address
-        myExp.codeGen();
-        Codegen.genPop(Codegen.T1); // T1 = value
-        Codegen.generate("sub", Codegen.T1, Codegen.T1, "1");
-        Codegen.generateIndexed("sw", Codegen.T1, Codegen.T0, 0);
+    	if(myExp instanceof IdNode) {  // must be due to BASE grammar
+            myExp.codeGen();
+            Codegen.genPop(Codegen.T1); // T1 = value
+            Codegen.generate("sub", Codegen.T1, Codegen.T1, "1");
+            Sym sym = ((IdNode)myExp).sym();
+            if (sym.isGlobal()) {
+                Codegen.generate("sw", Codegen.T1, "_" + ((IdNode)myExp).name());
+            } else {
+                Codegen.generateIndexed("sw", Codegen.T1, Codegen.FP, sym.getOffset());
+            }
+        }
     }
 
     // 1 child
@@ -1230,10 +1240,11 @@ class ReadStmtNode extends StmtNode {
     public void codeGen(String retLabel) {
 		Codegen.generate("li", Codegen.V0, 5);
 		Codegen.generate("syscall");
-		if(myExp instanceof IdNode)  // must be due to BASE grammar
+		if(myExp instanceof IdNode) {  // must be due to BASE grammar
 		    ((IdNode)myExp).genAddr(); // push the address of variable onto stack
-		Codegen.genPop(Codegen.T0); // pop address of variable into T0
-		Codegen.generateIndexed("sw", Codegen.V0, Codegen.T0, 0); // store V0 into address stored in T0
+		    Codegen.genPop(Codegen.T0); // pop address of variable into T0
+		    Codegen.generateIndexed("sw", Codegen.V0, Codegen.T0, 0); // store V0 into address stored in T0
+		}
     }
 
     // 1 child (actually can only be an IdNode or a TupleAccessNode)
@@ -1261,7 +1272,7 @@ class WriteStmtNode extends StmtNode {
     }
 
     public void codeGen(String retLabel) {
-		myExp.codeGen();
+	myExp.codeGen();
 		/*
 		if (myType == null) {
 			Codegen.genPop(Codegen.T0);
@@ -1273,10 +1284,10 @@ class WriteStmtNode extends StmtNode {
             Codegen.genPop(Codegen.A0);
             Codegen.generate("li", Codegen.V0, "4");
         } else {
-			Codegen.genPop(Codegen.A0);
+	    Codegen.genPop(Codegen.A0);
             Codegen.generate("li", Codegen.V0, "1");	
-		}
-		Codegen.generate("syscall");
+	}
+	Codegen.generate("syscall");
     }
 
     // 2 children
@@ -1340,14 +1351,14 @@ class ReturnStmtNode extends StmtNode {
     public void codeGen(String retLabel) {
 		if (myExp != null) {
 			myExp.codeGen();
-			if (myExp instanceof IdNode) {
+			//if (myExp instanceof IdNode) {
 				// returns a value
-				if (!((IdNode)myExp).sym().getType().isVoidType()) {
-					Codegen.genPop(Codegen.V0);		
-				}	
-			} else {
-				Codegen.genPop(Codegen.V0);
-			}
+			//	if (!((IdNode)myExp).sym().getType().isVoidType()) {
+			//		Codegen.genPop(Codegen.V0);		
+			//	}	
+			//} else {
+			Codegen.genPop(Codegen.V0);
+			//}
 		} // no return value just go on to next step
 		
 		// can finally use the retLabel
@@ -1521,7 +1532,8 @@ class IdNode extends ExpNode {
 
     // not sure if this is correct
     public void codeGen() {
-		if (mySym.isGlobal()) { // global variable
+
+	        if (mySym.isGlobal()) { // global variable
 			Codegen.generate("lw", Codegen.T0, "_" + myStrVal);
 		} else { // local variable
 			Codegen.generateIndexed("lw", Codegen.T0, Codegen.FP, mySym.getOffset());
@@ -1530,7 +1542,8 @@ class IdNode extends ExpNode {
     }
 
     public void genJumpAndLink() {
-		Codegen.generate("jal", "_" + myStrVal); // jal _fctnName
+	if (myStrVal.equals("main")) Codegen.generate("jal", "main");
+	else Codegen.generate("jal", "_" + myStrVal); // jal _fctnName
     }
 
     private int myLineNum;
