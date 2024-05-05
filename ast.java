@@ -652,11 +652,13 @@ class FctnDeclNode extends DeclNode {
 		
 		// restore FP
 		Codegen.generateIndexed("lw", Codegen.FP, Codegen.FP, -4);
-		int params_space = myId.paramsSize();
-		Codegen.generate("addu", Codegen.FP, Codegen.FP, params_space);
+		//int params_space = myId.paramsSize();
+		//Codegen.generate("addu", Codegen.FP, Codegen.FP, params_space);
 		
 		//restore SP
 		Codegen.generate("move", Codegen.SP, Codegen.T0);
+                Codegen.generate("addi", Codegen.SP, ((FctnSym)myId.sym()).getParamsSize());
+		//Codegen.generate("addi", Codegen.SP, ((FctnSym)myId.sym()).getParamsSize());
 
 		// return
 		if(!myId.isMain()) {
