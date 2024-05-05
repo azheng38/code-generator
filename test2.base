@@ -1,0 +1,22 @@
+integer adding{integer limit, integer a} [
+	integer sum.
+	write << "a\n".
+	write << a.
+	write << "\n".
+	write << "limit\n".
+	write << limit.
+	write << "\n".
+
+	sum = limit + a.
+
+	write << "sum".
+	write << sum.
+
+	return 1.
+]
+
+void main{} [
+  integer n.
+
+  adding(2, 3).
+]

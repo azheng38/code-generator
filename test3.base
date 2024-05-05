@@ -21,46 +21,31 @@ logical isPrime{integer maybePrime} [
   return True.
 ]
 
-integer _currentPrime.
+void poorlyOptimizedPrimeFinder{integer n} [
+  integer maybePrime.
+  maybePrime = 2.
 
-integer nextPrime{} [
-  _currentPrime++.
-  while ~isPrime(_currentPrime) [
-    _currentPrime++.
-  ]
-  return _currentPrime.
-]
-
-void poorlyOptimizedPrimeFactorizer{integer n} [
-  integer currentPrime.
-
-  currentPrime = 2.
-  
-  while currentPrime <= n [
-    if isFactor(n, currentPrime) [
-      write << currentPrime.
+  while maybePrime <= n [
+    if isPrime(maybePrime) [
+      write << maybePrime.
       write << "\n".
-      n = n / currentPrime.
-    ] else [
-      currentPrime = nextPrime().
     ]
+    maybePrime++.
   ]
 ]
 
 void main{} [
   integer n.
 
-  _currentPrime = 2.
-
-  write << "Enter the number for which you want to find the prime factorization: ".
+  write << "Enter the number for which you want to find all smaller or equal primes: ".
   read >> n.
   write << "\n".
 
   if n < 2 [
-    write << "Error: input must be 2 or greater".
+    write << "Error: no primes less than 2".
     write << "\n".
     return.
   ]
 
-  poorlyOptimizedPrimeFactorizer(n).
+  poorlyOptimizedPrimeFinder(n).
 ]
