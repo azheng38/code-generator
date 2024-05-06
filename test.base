@@ -1,66 +1,26 @@
-logical isFactor{integer dividend, integer maybeFactor} [
-  integer quotient.
-
-  !! get quotient using integer division (i.e. remainder is discarded)
-  quotient = dividend / maybeFactor.
-
-  !! if quotient * divisor gets us back our original number, it was an exact divisor, so it is a factor
-  return maybeFactor * quotient == dividend.
-]
-
-logical isPrime{integer maybePrime} [
-  integer maybeFactor.
-  maybeFactor = 2.
-  
-  while maybeFactor < maybePrime [
-    if isFactor(maybePrime, maybeFactor) [
-      return False.
-    ]
-    maybeFactor++.
+integer fib{integer n} [
+  if n == 0 | n == 1 [
+    return 1.
   ]
-  return True.
-]
-
-integer _currentPrime.
-
-integer nextPrime{} [
-  _currentPrime++.
-  while ~isPrime(_currentPrime) [
-    _currentPrime++.
-  ]
-  return _currentPrime.
-]
-
-void poorlyOptimizedPrimeFactorizer{integer n} [
-  integer currentPrime.
-
-  currentPrime = 2.
-  
-  while currentPrime <= n [
-    if isFactor(n, currentPrime) [
-      write << currentPrime.
-      write << "\n".
-      n = n / currentPrime.
-    ] else [
-      currentPrime = nextPrime().
-    ]
-  ]
+  return fib(n-1) + fib(n-2).
 ]
 
 void main{} [
   integer n.
 
-  _currentPrime = 2.
-
-  write << "Enter the number for which you want to find the prime factorization: ".
+  write << "Enter the index in the fibonacci sequence you desire: ".
   read >> n.
   write << "\n".
 
-  if n < 2 [
-    write << "Error: input must be 2 or greater".
+  if n < 0 [
+    write << "Error: cannot find fibonacci sequence indexed by negative number".
     write << "\n".
     return.
   ]
 
-  poorlyOptimizedPrimeFactorizer(n).
+  write << "Fibonacci number ".
+  write << n.
+  write << " is: ".
+  write << fib(n).
+  write << "\n".
 ]

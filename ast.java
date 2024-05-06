@@ -501,7 +501,7 @@ class VarDeclNode extends DeclNode {
 		if (myId.sym().isGlobal()) {
 			Codegen.generate(".data");
 			Codegen.generate(".align 2");
-			Codegen.generate("_" + myId.name(), ": .space 4");
+			Codegen.p.println("_" + myId.name() + ": .space 4");
 		}
     }
 
@@ -1595,7 +1595,7 @@ class StrLitNode extends ExpNode {
 		// stored in static data area yet
 		if (!stringStored.containsKey(myStrVal)) {
 			label = Codegen.nextLabel(); // generate a new label
-			Codegen.p.println(".data");
+			Codegen.p.println("\t.data");
 			Codegen.p.println(label + ": .asciiz " + myStrVal);
 			Codegen.generate(".text");
 			Codegen.generate("la", Codegen.T0, label);
